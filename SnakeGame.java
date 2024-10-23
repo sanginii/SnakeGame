@@ -128,18 +128,21 @@ class Game {
     private List<Food> foods;
     private Random random;
     private int score;
+    private int screenWidth, screenHeight;
 
-    public Game() {
+    public Game(int screenWidth, int screenHeight) {
         snake = new Snake(50, 50);
         foods = new ArrayList<>();
         random = new Random();
         score = 0;
+        this.screenWidth = screenWidth;
+        this.screenHeight = screenHeight;
         spawnFood();
     }
 
     public void spawnFood() {
-        int x = random.nextInt(40) * 10; // 0 to 390 (adjust for screen size)
-        int y = random.nextInt(30) * 10; // 0 to 290 (adjust for screen size)
+        int x = random.nextInt(screenWidth / 10) * 10;
+        int y = random.nextInt(screenHeight / 10) * 10;
         foods.add(new Food(x, y));
     }
 
@@ -162,7 +165,7 @@ class Game {
 
         // Check for self-collision and boundary collision
         if (snake.collidesWithItself() || snake.getBody().get(0).x < 0 || snake.getBody().get(0).y < 0 ||
-                snake.getBody().get(0).x >= 400 || snake.getBody().get(0).y >= 300) {
+                snake.getBody().get(0).x >= screenWidth || snake.getBody().get(0).y >= screenHeight) {
             throw new GameOverException("Game Over! Score: " + score);
         }
     }
@@ -184,16 +187,25 @@ public class SnakeGame extends JFrame implements ActionListener {
     private Game game;
     private Timer timer;
     private GamePanel gamePanel;
+    private int screenWidth, screenHeight;
 
     public SnakeGame() {
-        game = new Game();
+        // Get screen size for full screen mode
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        screenWidth = screenSize.width;
+        screenHeight = screenSize.height;
+
+        game = new Game(screenWidth, screenHeight);
         gamePanel = new GamePanel();
         add(gamePanel);
+
         setTitle("Snake Game");
-        setSize(4000, 3000); // Adjusted size to match the game area
+        setSize(screenWidth, screenHeight);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setVisible(true);
         setResizable(false);
+        setExtendedState(JFrame.MAXIMIZED_BOTH); // Maximize the window
+
         timer = new Timer(100, this);
         timer.start();
 
@@ -252,7 +264,7 @@ public class SnakeGame extends JFrame implements ActionListener {
 
     // Method to restart the game
     private void restartGame() {
-        game = new Game(); // Reinitialize the game
+        game = new Game(screenWidth, screenHeight); // Reinitialize the game
         timer.start();     // Start the timer again
     }
 
