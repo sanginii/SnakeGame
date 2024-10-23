@@ -16,8 +16,13 @@ class GameObject {
         this.size = size;
     }
 
-    public int getX() { return x; }
-    public int getY() { return y; }
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
 }
 
 // Movable interface for objects that can move
@@ -41,23 +46,37 @@ class Snake extends GameObject implements Movable {
         super(x, y, 10);
         body = new ArrayList<>();
         body.add(new Point(x, y));
-        direction = "RIGHT";
+        direction = "RIGHT"; // Start by moving right
     }
 
     public void setDirection(String newDirection) {
-        this.direction = newDirection;
+        // Basic validation to prevent the snake from reversing direction
+        if (!((direction.equals("UP") && newDirection.equals("DOWN")) ||
+                (direction.equals("DOWN") && newDirection.equals("UP")) ||
+                (direction.equals("LEFT") && newDirection.equals("RIGHT")) ||
+                (direction.equals("RIGHT") && newDirection.equals("LEFT")))) {
+            this.direction = newDirection;
+        }
     }
 
-    
+    @Override
     public void move() {
         Point head = body.get(0);
         Point newHead = new Point(head.x, head.y);
 
         switch (direction) {
-            case "UP": newHead.y -= size; break;
-            case "DOWN": newHead.y += size; break;
-            case "LEFT": newHead.x -= size; break;
-            case "RIGHT": newHead.x += size; break;
+            case "UP":
+                newHead.y -= size;
+                break;
+            case "DOWN":
+                newHead.y += size;
+                break;
+            case "LEFT":
+                newHead.x -= size;
+                break;
+            case "RIGHT":
+                newHead.x += size;
+                break;
         }
 
         body.add(0, newHead);
@@ -73,7 +92,6 @@ class Snake extends GameObject implements Movable {
         return body;
     }
 
-    
     public void draw(Graphics g) {
         g.setColor(Color.GREEN);
         for (Point point : body) {
@@ -98,7 +116,6 @@ class Food extends GameObject {
         super(x, y, 10);
     }
 
-      
     public void draw(Graphics g) {
         g.setColor(Color.RED);
         g.fillRect(x, y, size, size);
@@ -121,8 +138,8 @@ class Game {
     }
 
     public void spawnFood() {
-        int x = random.nextInt(40) * 10; // 0 to 390
-        int y = random.nextInt(30) * 10; // 0 to 290
+        int x = random.nextInt(40) * 10; // 0 to 390 (adjust for screen size)
+        int y = random.nextInt(30) * 10; // 0 to 290 (adjust for screen size)
         foods.add(new Food(x, y));
     }
 
@@ -140,11 +157,12 @@ class Game {
                 break;
             }
         }
-        if (foodToRemove != null) foods.remove(foodToRemove);
+        if (foodToRemove != null)
+            foods.remove(foodToRemove);
 
         // Check for self-collision and boundary collision
         if (snake.collidesWithItself() || snake.getBody().get(0).x < 0 || snake.getBody().get(0).y < 0 ||
-            snake.getBody().get(0).x >= 400 || snake.getBody().get(0).y >= 300) {
+                snake.getBody().get(0).x >= 400 || snake.getBody().get(0).y >= 300) {
             throw new GameOverException("Game Over! Score: " + score);
         }
     }
@@ -172,7 +190,7 @@ public class SnakeGame extends JFrame implements ActionListener {
         gamePanel = new GamePanel();
         add(gamePanel);
         setTitle("Snake Game");
-        setSize(1000, 1000);
+        setSize(4000, 3000); // Adjusted size to match the game area
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setVisible(true);
         setResizable(false);
@@ -181,32 +199,66 @@ public class SnakeGame extends JFrame implements ActionListener {
 
         // Key listener for snake movement
         addKeyListener(new KeyAdapter() {
-            
             public void keyPressed(KeyEvent e) {
                 switch (e.getKeyCode()) {
-                    case KeyEvent.VK_UP: game.getSnake().setDirection("UP"); break;
-                    case KeyEvent.VK_DOWN: game.getSnake().setDirection("DOWN"); break;
-                    case KeyEvent.VK_LEFT: game.getSnake().setDirection("LEFT"); break;
-                    case KeyEvent.VK_RIGHT: game.getSnake().setDirection("RIGHT"); break;
+                    case KeyEvent.VK_UP:
+                        game.getSnake().setDirection("UP");
+                        break;
+                    case KeyEvent.VK_DOWN:
+                        game.getSnake().setDirection("DOWN");
+                        break;
+                    case KeyEvent.VK_LEFT:
+                        game.getSnake().setDirection("LEFT");
+                        break;
+                    case KeyEvent.VK_RIGHT:
+                        game.getSnake().setDirection("RIGHT");
+                        break;
                 }
             }
         });
     }
 
-       
+    @Override
     public void actionPerformed(ActionEvent e) {
         try {
             game.update();
             gamePanel.repaint();
         } catch (GameOverException ex) {
             timer.stop();
-            JOptionPane.showMessageDialog(this, ex.getMessage());
+            showGameOverDialog(ex.getMessage());
         }
+    }
+
+    // Method to show custom Game Over dialog with OK and Restart buttons
+    private void showGameOverDialog(String message) {
+        String[] options = {"OK", "Restart Game"};
+        int choice = JOptionPane.showOptionDialog(
+                this,
+                message,
+                "Game Over",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.INFORMATION_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+
+        if (choice == 1) { // If 'Restart Game' is selected
+            restartGame();
+        } else { // If 'OK' is selected or dialog is closed
+            System.exit(0); // Close the game
+        }
+    }
+
+    // Method to restart the game
+    private void restartGame() {
+        game = new Game(); // Reinitialize the game
+        timer.start();     // Start the timer again
     }
 
     // Panel for rendering the game
     class GamePanel extends JPanel {
-        
+        @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
             game.draw(g);
