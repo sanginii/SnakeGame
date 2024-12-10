@@ -41,16 +41,18 @@ class GameOverException extends Exception {
 class Snake extends GameObject implements Movable {
     private List<Point> body;
     private String direction;
+    private boolean growing;
 
     public Snake(int x, int y) {
-        super(x, y, 10);
+        super(x, y, 20);
         body = new ArrayList<>();
         body.add(new Point(x, y));
         direction = "RIGHT"; // Start by moving right
+        growing = false;
     }
 
     public void setDirection(String newDirection) {
-        // Basic validation to prevent the snake from reversing direction
+        // Prevent reversing direction
         if (!((direction.equals("UP") && newDirection.equals("DOWN")) ||
                 (direction.equals("DOWN") && newDirection.equals("UP")) ||
                 (direction.equals("LEFT") && newDirection.equals("RIGHT")) ||
@@ -80,12 +82,17 @@ class Snake extends GameObject implements Movable {
         }
 
         body.add(0, newHead);
-        body.remove(body.size() - 1); // Remove the tail
+
+        // Only remove the tail if the snake is not growing
+        if (!growing) {
+            body.remove(body.size() - 1);
+        } else {
+            growing = false;
+        }
     }
 
     public void grow() {
-        Point tail = body.get(body.size() - 1);
-        body.add(new Point(tail.x, tail.y)); // Duplicate the last segment
+        growing = true; // Flag to grow on next move
     }
 
     public List<Point> getBody() {
@@ -93,11 +100,14 @@ class Snake extends GameObject implements Movable {
     }
 
     public void draw(Graphics g) {
-        g.setColor(Color.GREEN);
-        for (Point point : body) {
-            g.fillRect(point.x, point.y, size, size);
+        Graphics2D g2d = (Graphics2D) g;
+        for (int i = 0; i < body.size(); i++) {
+            Point point = body.get(i);
+            g2d.setColor(i == 0 ? Color.YELLOW : Color.GREEN); // Head is yellow, body is green
+            g2d.fillOval(point.x, point.y, size, size); // Draw snake segments as ovals
         }
     }
+    
 
     public boolean collidesWithItself() {
         Point head = body.get(0);
@@ -113,12 +123,13 @@ class Snake extends GameObject implements Movable {
 // Class representing the Food
 class Food extends GameObject {
     public Food(int x, int y) {
-        super(x, y, 10);
+        super(x, y, 20);
     }
 
     public void draw(Graphics g) {
-        g.setColor(Color.RED);
-        g.fillRect(x, y, size, size);
+        Graphics2D g2d = (Graphics2D) g;
+        g2d.setColor(new Color(255, 69, 0)); // Use an orange-red color for food
+        g2d.fillOval(x, y, size, size); // Draw food as a circle
     }
 }
 
@@ -129,9 +140,10 @@ class Game {
     private Random random;
     private int score;
     private int screenWidth, screenHeight;
+    
 
     public Game(int screenWidth, int screenHeight) {
-        snake = new Snake(50, 50);
+        snake = new Snake(100, 100);
         foods = new ArrayList<>();
         random = new Random();
         score = 0;
@@ -141,8 +153,8 @@ class Game {
     }
 
     public void spawnFood() {
-        int x = random.nextInt(screenWidth / 10) * 10;
-        int y = random.nextInt(screenHeight / 10) * 10;
+        int x = random.nextInt(screenWidth / 20) * 20;
+        int y = random.nextInt(screenHeight / 20) * 20;
         foods.add(new Food(x, y));
     }
 
@@ -153,7 +165,7 @@ class Game {
         Food foodToRemove = null;
         for (Food food : foods) {
             if (snake.getBody().get(0).x == food.getX() && snake.getBody().get(0).y == food.getY()) {
-                snake.grow();
+                snake.grow(); // Make the snake grow
                 score += 10;
                 foodToRemove = food;
                 spawnFood(); // Spawn new food
@@ -179,6 +191,10 @@ class Game {
 
     public Snake getSnake() {
         return snake;
+    }
+
+    public int getScore() {
+        return score;
     }
 }
 
@@ -269,13 +285,29 @@ public class SnakeGame extends JFrame implements ActionListener {
     }
 
     // Panel for rendering the game
-    class GamePanel extends JPanel {
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            game.draw(g);
-        }
+    // GamePanel class for background color and score display
+   class GamePanel extends JPanel {
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+
+        // Set background color or gradient
+        Graphics2D g2d = (Graphics2D) g;
+        Color color1 = new Color(25, 25, 112); // Dark blue
+        Color color2 = new Color(0, 0, 139);   // Darker blue
+        g2d.setPaint(new GradientPaint(0, 0, color1, getWidth(), getHeight(), color2));
+        g2d.fillRect(0, 0, getWidth(), getHeight());
+
+        // Draw the game objects
+        game.draw(g);
+
+        // Display the score at the top
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Arial", Font.BOLD, 24));
+        g.drawString("Score: " + game.getScore(), 10, 30);
     }
+}
+
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(SnakeGame::new);
